@@ -1,0 +1,11 @@
+{
+  "installCommand": "cd uniconnect/client && npm install",
+  "buildCommand": "cd uniconnect/client && npm run build",
+  "outputDirectory": "uniconnect/client/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

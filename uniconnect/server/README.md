@@ -113,3 +113,5 @@ Deploy only the Node backend service from the `uniconnect/server` directory.
 - Start command: `npm start`
 - Add the same environment variables from `.env.example`
 - Use a managed MySQL database and import the schema from [database.sql](C:/Users/Muhammed Mishal/newreact - Copy (2) - Copy/uniconnect/database.sql)
+- For Railway or other managed MySQL providers, you can set either the separate `DB_*` variables or a single `DB_URL` / `DATABASE_URL`
+- If your frontend uses Vercel preview deployments, set `CORS_ORIGIN` to include both the production domain and a wildcard such as `https://*.vercel.app`

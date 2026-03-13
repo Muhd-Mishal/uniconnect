@@ -21,16 +21,44 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const clientOrigin = process.env.CLIENT_ORIGIN || process.env.FRONTEND_URL || '*';
-const allowedOrigins = (clientOrigin === '*' ? '' : clientOrigin)
+const configuredOrigins = [
+    process.env.CLIENT_ORIGIN,
+    process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN
+]
+    .filter(Boolean)
+    .join(',');
+
+const allowedOrigins = (configuredOrigins === '*' ? '' : configuredOrigins)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 
+const wildcardToRegex = (pattern) => new RegExp(`^${pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')}$`);
+
 const isAllowedOrigin = (origin) => {
     if (!origin) return true;
     if (allowedOrigins.length === 0) return true;
-    return allowedOrigins.includes(origin);
+    return allowedOrigins.some((allowedOrigin) => {
+        if (allowedOrigin === '*') return true;
+        if (allowedOrigin.includes('*')) {
+            return wildcardToRegex(allowedOrigin).test(origin);
+        }
+        return allowedOrigin === origin;
+    });
+};
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 const io = new Server(server, {
@@ -46,11 +74,8 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -144,6 +169,15 @@ io.on('connection', (socket) => {
 // Base Route
 app.get('/', (req, res) => {
     res.send('UNI-CONNECT API is running');
+});
+
+app.get('/api/health', async (req, res, next) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ ok: true, database: 'connected' });
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Error Handling Middleware

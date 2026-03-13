@@ -2,7 +2,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../utils/runtimeConfig';
 
 const api = axios.create({
-    baseURL:"https://uniconnect.onrender.com/api",
+    baseURL:"https://uniconnect-backend.onrender.com/api",
 });
 
 // Request interceptor to add the auth token header to requests

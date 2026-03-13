@@ -1,5 +1,9 @@
 import pool from '../config/db.js';
-import axios from 'axios';
+import {
+    buildEvaluationFeedback,
+    evaluateAnswerSimilarity
+} from '../services/aiEvaluator.js';
+import { insertEvaluationRecord } from './evaluateController.js';
 
 // @desc    Get domains
 // @route   GET /api/interviews/domains
@@ -46,6 +50,10 @@ export const evaluateAnswer = async (req, res, next) => {
     try {
         const { question_id, user_answer } = req.body;
 
+        if (!question_id || !user_answer) {
+            return res.status(400).json({ message: 'question_id and user_answer are required' });
+        }
+
         // Fetch the ideal answer
         const [questions] = await pool.execute(
             'SELECT ideal_answer FROM interview_questions WHERE question_id = ?',
@@ -57,31 +65,29 @@ export const evaluateAnswer = async (req, res, next) => {
         }
 
         const ideal_answer = questions[0].ideal_answer;
-
-        // Call Python AI Service
-        // process.env.AI_SERVICE_URL
-        const aiResponse = await axios.post(`${process.env.AI_SERVICE_URL}/evaluate`, {
-            user_answer,
-            ideal_answer
-        });
-
-        const { score, feedback } = aiResponse.data;
+        const { similarityScore, percentage } = evaluateAnswerSimilarity(ideal_answer, user_answer);
+        const feedback = buildEvaluationFeedback(percentage);
 
         // Save result to database
         await pool.execute(
             'INSERT INTO interview_results (user_id, question_id, user_answer, score, feedback) VALUES (?, ?, ?, ?, ?)',
-            [req.user.user_id, question_id, user_answer, score, feedback]
+            [req.user.user_id, question_id, user_answer, percentage, feedback]
         );
 
+        await insertEvaluationRecord({
+            userId: req.user.user_id,
+            questionId: question_id,
+            answer: user_answer,
+            similarityScore
+        });
+
         res.json({
-            score,
+            similarityScore,
+            percentage,
+            score: percentage,
             feedback
         });
     } catch (error) {
-        if (error.response) {
-            console.error('AI Service Error:', error.response.data);
-            return res.status(502).json({ message: 'AI evaluation failed' });
-        }
         next(error);
     }
 };

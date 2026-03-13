@@ -111,6 +111,17 @@ CREATE TABLE IF NOT EXISTS interview_results (
   FOREIGN KEY (question_id) REFERENCES interview_questions(question_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS answer_evaluations (
+  evaluation_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  question_id INT DEFAULT NULL,
+  answer TEXT NOT NULL,
+  similarity_score DECIMAL(6,4) NOT NULL,
+  evaluated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES interview_questions(question_id) ON DELETE SET NULL
+);
+
 -- Insert an admin user: password is 'admin123' hashed with bcrypt
 INSERT INTO users (username, email, password, role) 
 VALUES ('admin', 'admin@uniconnect.com', '$2a$10$wV2h3X5.Qj.a5B0PjS.vG.T8lWzB693r1g6d8Hk1Xy4Z5t9sO7P.q', 'admin');

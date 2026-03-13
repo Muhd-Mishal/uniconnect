@@ -15,12 +15,14 @@ import aiRoutes from './routes/aiRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import evaluateRoutes from './routes/evaluateRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
+const clientOrigin = process.env.CLIENT_ORIGIN || process.env.FRONTEND_URL || '*';
+const allowedOrigins = (clientOrigin === '*' ? '' : clientOrigin)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
@@ -45,7 +47,7 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || "*",
+  origin: clientOrigin,
   credentials: true
 }));
 app.use(express.json());
@@ -72,6 +74,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api', evaluateRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);

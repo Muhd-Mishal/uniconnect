@@ -32,9 +32,11 @@ npm run preview
 
 The client reads the following optional environment variables:
 
-- `VITE_API_URL`: API base URL. Default: `http://localhost:3000/api`
-- `VITE_API_ORIGIN`: Origin used for uploaded images/files. Default: `http://localhost:3000`
-- `VITE_SOCKET_URL`: Socket server URL. Default: `http://localhost:3000`
+- `VITE_API_URL`: Backend origin or API URL. Examples: `https://your-backend.onrender.com` or `https://your-backend.onrender.com/api`
+- `VITE_API_ORIGIN`: Backend origin used for uploaded images/files. Example: `https://your-backend.onrender.com`
+- `VITE_SOCKET_URL`: Socket server URL. Example: `https://your-backend.onrender.com`
+
+For Vercel production, set all three values to your Render backend URL so the frontend does not fall back to the Vercel domain.
 
 ## PWA support
 

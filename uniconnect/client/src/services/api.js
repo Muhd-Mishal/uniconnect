@@ -1,7 +1,13 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../utils/runtimeConfig';
+
+const normalizeApiBaseUrl = (value = '') => {
+    const trimmed = value.replace(/\/+$/, '');
+    return /\/api$/i.test(trimmed) ? trimmed : `${trimmed}/api`;
+};
 
 const api = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api`,
+    baseURL: normalizeApiBaseUrl(API_BASE_URL),
 });
 
 // Request interceptor to add the auth token header

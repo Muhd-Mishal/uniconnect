@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { API_BASE_URL } from './runtimeConfig';
 
+const normalizeApiBaseUrl = (value = '') => {
+    const trimmed = value.replace(/\/+$/, '');
+    return /\/api$/i.test(trimmed) ? trimmed : `${trimmed}/api`;
+};
+
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: normalizeApiBaseUrl(API_BASE_URL),
 });
 
 api.interceptors.request.use(

@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://uniconnect-2-l966.onrender.com/api/$1"
+      "source": "/api/:path*",
+      "destination": "https://uniconnect-2-l966.onrender.com/api/:path*"
     },
     {
-      "source": "/uploads/(.*)",
-      "destination": "https://uniconnect-2-l966.onrender.com/uploads/$1"
+      "source": "/uploads/:path*",
+      "destination": "https://uniconnect-2-l966.onrender.com/uploads/:path*"
     },
     {
       "source": "/(.*)",

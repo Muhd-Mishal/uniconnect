@@ -2,11 +2,13 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
-import { Upload, User, BookOpen, Briefcase, Calendar, MessageSquare, UserPlus } from 'lucide-react';
+import { Upload, User, BookOpen, Briefcase, Calendar, MessageSquare, UserPlus, Clipboard, ExternalLink } from 'lucide-react';
 import PageHero from '../components/PageHero';
 import SurfaceCard from '../components/SurfaceCard';
 import { usePopup } from '../components/PopupProvider';
 import { API_ORIGIN } from '../utils/runtimeConfig';
+import PortfolioManager from './PortfolioManager';
+import CareerCoachPanel from '../components/CareerCoachPanel';
 
 function Profile() {
     const popup = usePopup();
@@ -16,11 +18,13 @@ function Profile() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
+    const [portfolio, setPortfolio] = useState(null);
     const [formData, setFormData] = useState({
         department: '',
         year: '',
         skills: '',
-        career_interest: ''
+        career_interest: '',
+        bio: '',
     });
     const [profilePic, setProfilePic] = useState(null);
     const [resume, setResume] = useState(null);
@@ -36,12 +40,33 @@ function Profile() {
             setLoading(true);
             const endpoint = id ? `/profile/${id}` : '/profile';
             const { data } = await api.get(endpoint);
+            let portfolioData = null;
+
+            if (!id) {
+                try {
+                    const portfolioResponse = await api.get('/portfolio/me');
+                    portfolioData = portfolioResponse.data;
+                    setPortfolio(portfolioResponse.data);
+                } catch (portfolioError) {
+                    console.error('Failed to fetch portfolio, using profile fallback', portfolioError);
+                    portfolioData = {
+                        username: data.username,
+                        bio: '',
+                        skills: data.skills || '',
+                        projects: [],
+                        sharePath: data.username ? `/portfolio/${data.username}` : '',
+                    };
+                    setPortfolio(portfolioData);
+                }
+            }
+
             setProfile(data);
             setFormData({
                 department: data.department || '',
                 year: data.year || '',
                 skills: data.skills || '',
-                career_interest: data.career_interest || ''
+                career_interest: data.career_interest || '',
+                bio: portfolioData?.bio || '',
             });
         } catch (error) {
             console.error('Failed to fetch profile', error);
@@ -97,12 +122,40 @@ function Profile() {
         if (profilePic) data.append('profile_pic', profilePic);
         if (resume) data.append('resume', resume);
 
+        const portfolioData = new FormData();
+        portfolioData.append('bio', formData.bio);
+        portfolioData.append('skills', formData.skills);
+
         try {
-            await api.put('/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+            await Promise.all([
+                api.put('/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+                api.put('/portfolio/me', portfolioData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+            ]);
             setEditing(false);
             fetchProfile();
         } catch (error) {
             console.error('Failed to update profile', error);
+        }
+    };
+
+    const publicPortfolioUrl = profile?.username && typeof window !== 'undefined'
+        ? `${window.location.origin}/portfolio/${profile.username}`
+        : '';
+
+    const handleCopyPortfolioLink = async () => {
+        if (!publicPortfolioUrl) return;
+
+        try {
+            await navigator.clipboard.writeText(publicPortfolioUrl);
+            await popup.alert('Portfolio link copied to clipboard.', {
+                title: 'Link copied',
+                tone: 'success',
+            });
+        } catch {
+            await popup.alert(publicPortfolioUrl, {
+                title: 'Copy manually',
+                tone: 'info',
+            });
         }
     };
 
@@ -182,6 +235,7 @@ function Profile() {
                                     <input name="year" type="number" value={formData.year} onChange={handleChange} placeholder="Year" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70" />
                                 </div>
                                 <input name="career_interest" value={formData.career_interest} onChange={handleChange} placeholder="Career interests" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70" />
+                                <textarea name="bio" value={formData.bio} onChange={handleChange} rows="4" placeholder="Short public portfolio bio" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70 md:col-span-2" />
                                 <textarea name="skills" value={formData.skills} onChange={handleChange} rows="3" placeholder="Skills" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70" />
                                 <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => handleFileChange(event, 'resume')} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
                                 <div className="flex flex-wrap gap-3 pt-2">
@@ -222,23 +276,38 @@ function Profile() {
                                     )}
                                 </div>
 
-                                {profile?.resume && (
-                                    <div className="md:col-span-2">
-                                        <a
-                                            href={`${API_ORIGIN}${profile.resume}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                                        >
+                                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Portfolio bio</div>
+                                    <p className="text-sm leading-7 text-slate-600">{portfolio?.bio || 'No public bio added yet.'}</p>
+                                </div>
+
+                                <div className="md:col-span-2 flex flex-wrap gap-3">
+                                    {profile?.resume && (
+                                        <a href={`${API_ORIGIN}${profile.resume}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
                                             View current resume
                                         </a>
-                                    </div>
-                                )}
+                                    )}
+                                    {publicPortfolioUrl && (
+                                        <>
+                                            <button onClick={handleCopyPortfolioLink} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
+                                                <Clipboard size={16} />
+                                                Copy portfolio link
+                                            </button>
+                                            <a href={publicPortfolioUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                                                <ExternalLink size={16} />
+                                                Open public portfolio
+                                            </a>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             </SurfaceCard>
+
+            {isOwnProfile && <PortfolioManager embedded projectsOnly />}
+            {isOwnProfile && <CareerCoachPanel />}
 
             {showGroupModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">

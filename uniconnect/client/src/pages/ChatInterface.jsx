@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import api, { aiService } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
-import { Send, User as UserIcon, Users, MessageSquare, Search, X, Info, Trash2, UserPlus, Bot, Loader2 } from 'lucide-react';
+import { Send, User as UserIcon, Users, MessageSquare, Search, X, Info, Trash2, UserPlus, Bot, Loader2, ArrowLeft } from 'lucide-react';
 import ChatSidebar from '../components/ChatSidebar';
 import PageHero from '../components/PageHero';
 import { usePopup } from '../components/PopupProvider';
@@ -21,6 +21,7 @@ function ChatInterface() {
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
+    const [showMobileSidebar, setShowMobileSidebar] = useState(true);
 
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
@@ -62,13 +63,11 @@ function ChatInterface() {
             if (directUserId && directUserName) {
                 const nextChat = { id: parseInt(directUserId, 10), name: directUserName, type: 'direct' };
                 setActiveChat(nextChat);
+                setShowMobileSidebar(false);
                 sessionStorage.setItem('activeChat', JSON.stringify(nextChat));
             } else if (savedChat) {
                 setActiveChat(JSON.parse(savedChat));
-            } else if (data.directChats?.length > 0) {
-                setActiveChat(data.directChats[0]);
-            } else if (data.groups?.length > 0) {
-                setActiveChat(data.groups[0]);
+                setShowMobileSidebar(false);
             }
         } catch (error) {
             console.error('Failed to fetch chat connections:', error);
@@ -358,17 +357,33 @@ function ChatInterface() {
 
     const getInitial = (value) => value?.charAt(0)?.toUpperCase() || 'U';
     const isGroupAdmin = groupMembers.find((member) => member.user_id === user?.user_id)?.is_admin;
+    const handleChatSelected = () => setShowMobileSidebar(false);
+    const handleShowMobileSidebar = () => setShowMobileSidebar(true);
 
     return (
         <div className="space-y-6">
-            <PageHero eyebrow="Messaging" title="Conversations, groups, and collaboration" description="A cleaner messaging workspace for direct chat and group coordination." />
-            <div className="flex h-[calc(100vh-170px)] min-h-[520px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.05)] md:min-h-[620px] lg:h-[calc(100vh-220px)] lg:flex-row">
-                <ChatSidebar connections={connections} activeChat={activeChat} setActiveChat={setActiveChat} setShowGroupModal={setShowGroupModal} />
-                <div className={`flex h-full flex-1 flex-col ${showGroupInfo && activeChat?.type === 'group' ? 'border-r border-slate-200' : ''}`}>
+            <div className="hidden md:block">
+                <PageHero eyebrow="Messaging" title="Conversations, groups, and collaboration" description="A cleaner messaging workspace for direct chat and group coordination." />
+            </div>
+            <div className="flex h-[calc(100vh-150px)] min-h-[560px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.05)] lg:h-[calc(100vh-220px)] lg:flex-row">
+                <div className={`${showMobileSidebar ? 'flex' : 'hidden'} h-full w-full lg:flex lg:w-[320px] lg:shrink-0`}>
+                    <ChatSidebar
+                        connections={connections}
+                        activeChat={activeChat}
+                        setActiveChat={setActiveChat}
+                        setShowGroupModal={setShowGroupModal}
+                        onChatSelected={handleChatSelected}
+                    />
+                </div>
+
+                <div className={`${showMobileSidebar ? 'hidden lg:flex' : 'flex'} h-full min-w-0 flex-1 flex-col ${showGroupInfo && activeChat?.type === 'group' ? 'border-r border-slate-200' : ''}`}>
                     {activeChat ? (
                         <>
-                            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-4 sm:px-5">
+                            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-4 sm:px-5">
                                 <div className="flex items-center gap-3">
+                                    <button onClick={handleShowMobileSidebar} className="rounded-full p-2 text-slate-500 hover:bg-slate-100 lg:hidden">
+                                        <ArrowLeft size={18} />
+                                    </button>
                                     <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100">
                                         {activeChat.type === 'group' ? <Users size={20} className="text-slate-700" /> : activeChat.type === 'ai' ? <Bot size={20} className="text-slate-700" /> : <UserIcon size={20} className="text-slate-700" />}
                                     </div>
@@ -407,7 +422,7 @@ function ChatInterface() {
                                         const isMe = message.sender_id === user?.user_id;
                                         return (
                                             <div key={message.id || index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[85%] rounded-[22px] px-4 py-3 text-sm shadow-sm sm:max-w-[70%] ${isMe ? 'rounded-br-sm bg-slate-950 text-white' : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'}`}>
+                                                <div className={`max-w-[88%] rounded-[22px] px-4 py-3 text-sm shadow-sm sm:max-w-[78%] lg:max-w-[70%] ${isMe ? 'rounded-br-sm bg-slate-950 text-white' : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'}`}>
                                                     {!isMe && activeChat.type === 'group' && <div className="mb-1 text-xs font-semibold text-slate-500">{message.sender_name}</div>}
                                                     <div className="break-words">{message.content}</div>
                                                 </div>
@@ -449,9 +464,10 @@ function ChatInterface() {
                             </div>
                         </>
                     ) : (
-                        <div className="flex flex-1 flex-col items-center justify-center bg-slate-50 text-center text-slate-400">
+                        <div className="flex flex-1 flex-col items-center justify-center bg-slate-50 px-6 text-center text-slate-400">
                             <MessageSquare size={64} className="mb-4 text-slate-300" />
                             <h3 className="text-xl font-medium text-slate-500">Select a chat to start messaging</h3>
+                            <p className="mt-2 max-w-sm text-sm leading-6 text-slate-400">Choose a person or group from the list and the conversation will open here.</p>
                         </div>
                     )}
                 </div>
@@ -580,6 +596,51 @@ function ChatInterface() {
                     </div>
                 )}
             </div>
+
+            {showGroupInfo && activeChat?.type === 'group' && (
+                <div className="fixed inset-0 z-40 bg-slate-950/45 p-4 lg:hidden">
+                    <div className="ml-auto h-full max-w-sm overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-4 shadow-2xl">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="font-semibold text-slate-900">Group info</h3>
+                            <button onClick={() => setShowGroupInfo(false)} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="mb-4 rounded-2xl bg-slate-50 p-4">
+                            <div className="text-sm font-semibold text-slate-950">{activeChat.name}</div>
+                            <div className="mt-1 text-xs text-slate-500">{groupMembers.length} members</div>
+                        </div>
+                        <div className="space-y-3">
+                            {loadingMembers ? (
+                                <div className="text-sm text-slate-500">Loading members...</div>
+                            ) : (
+                                groupMembers.map((member) => (
+                                    <div key={member.user_id} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-3">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-2xl bg-white text-xs font-semibold text-slate-600">
+                                                {member.profile_pic ? (
+                                                    <img src={`${API_ORIGIN}${member.profile_pic}`} alt={member.username} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    getInitial(member.username)
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="truncate text-sm font-medium text-slate-900">{member.username}</div>
+                                                <div className="truncate text-xs text-slate-500">{member.is_admin ? 'Group admin' : member.department || 'Member'}</div>
+                                            </div>
+                                        </div>
+                                        {isGroupAdmin && !member.is_admin && (
+                                            <button onClick={() => removeMember(member.user_id)} className="rounded-full p-2 text-rose-600 hover:bg-rose-50">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showGroupModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">

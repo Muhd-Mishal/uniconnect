@@ -157,6 +157,81 @@ function Feed() {
 
     const getProfileImage = (path) => `${API_ORIGIN}${path}`;
     const getInitial = (value) => value?.charAt(0)?.toUpperCase() || 'U';
+    const searchPanel = (
+        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-3">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white">
+                    <Users size={20} />
+                </div>
+                <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-950">Find connections</h2>
+                    <p className="text-sm text-slate-500">Search people across the network.</p>
+                </div>
+            </div>
+
+            <div className="relative mt-5">
+                <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by name"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70"
+                />
+            </div>
+
+            <div className="mt-4 max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+                {isSearching && (
+                    <div className="flex justify-center py-6">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-950" />
+                    </div>
+                )}
+
+                {searchError && (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                        {searchError}
+                    </div>
+                )}
+
+                {!isSearching && !searchError && searchQuery.trim() !== '' && searchResults.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                        No users found matching "{searchQuery}"
+                    </div>
+                )}
+
+                {!isSearching && !searchError && searchResults.length > 0 && (
+                    <div className="space-y-2">
+                        {searchResults.map((searchedUser) => (
+                            <button
+                                type="button"
+                                onClick={() => navigate('/profile/' + searchedUser.id)}
+                                key={searchedUser.id}
+                                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left transition hover:bg-slate-50"
+                            >
+                                <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-100 text-xs font-semibold text-slate-600">
+                                    {searchedUser.profilePic ? (
+                                        <img src={getProfileImage(searchedUser.profilePic)} alt={searchedUser.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        getInitial(searchedUser.name)
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-slate-950">{searchedUser.name}</div>
+                                    <div className="truncate text-xs text-slate-500">{searchedUser.department || 'Member'}</div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {searchQuery.trim() === '' && (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                        Search by name to quickly discover students and members.
+                    </div>
+                )}
+            </div>
+        </section>
+    );
 
     if (loading) {
         return <div className="py-16 text-center text-sm text-slate-500">Loading feed...</div>;
@@ -164,6 +239,9 @@ function Feed() {
 
     return (
         <div className="mx-auto w-full max-w-7xl px-0 py-4 sm:px-2 lg:px-0">
+            <div className="mb-6">
+                {searchPanel}
+            </div>
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
                 <div className="order-2 min-w-0 lg:order-1">
                     <section className="mb-6 overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_65%,#334155_100%)] p-6 text-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] sm:p-8">
@@ -385,80 +463,6 @@ function Feed() {
                 </div>
 
                 <aside className="order-1 space-y-5 lg:order-2">
-                    <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
-                        <div className="flex items-center gap-3">
-                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white">
-                                <Users size={20} />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-semibold tracking-tight text-slate-950">Find connections</h2>
-                                <p className="text-sm text-slate-500">Search people across the network.</p>
-                            </div>
-                        </div>
-
-                        <div className="relative mt-5">
-                            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                placeholder="Search by name"
-                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-200/70"
-                            />
-                        </div>
-
-                        <div className="mt-4 max-h-[60vh] overflow-y-auto space-y-2 pr-1">
-                            {isSearching && (
-                                <div className="flex justify-center py-6">
-                                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-950" />
-                                </div>
-                            )}
-
-                            {searchError && (
-                                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-                                    {searchError}
-                                </div>
-                            )}
-
-                            {!isSearching && !searchError && searchQuery.trim() !== '' && searchResults.length === 0 && (
-                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                                    No users found matching "{searchQuery}"
-                                </div>
-                            )}
-
-                            {!isSearching && !searchError && searchResults.length > 0 && (
-                                <div className="space-y-2">
-                                    {searchResults.map((searchedUser) => (
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate('/profile/' + searchedUser.id)}
-                                            key={searchedUser.id}
-                                            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left transition hover:bg-slate-50"
-                                        >
-                                            <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-100 text-xs font-semibold text-slate-600">
-                                                {searchedUser.profilePic ? (
-                                                    <img src={getProfileImage(searchedUser.profilePic)} alt={searchedUser.name} className="h-full w-full object-cover" />
-                                                ) : (
-                                                    getInitial(searchedUser.name)
-                                                )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="truncate text-sm font-semibold text-slate-950">{searchedUser.name}</div>
-                                                <div className="truncate text-xs text-slate-500">{searchedUser.department || 'Member'}</div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {searchQuery.trim() === '' && (
-                                <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                                    Search by name to quickly discover students and members.
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
                     <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
                         <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Posting tips</h3>
                         <div className="mt-4 space-y-4">

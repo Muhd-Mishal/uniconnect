@@ -16,6 +16,7 @@ import userRoutes from './routes/userRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import evaluateRoutes from './routes/evaluateRoutes.js';
+import portfolioRoutes from './routes/portfolioRoutes.js';
 
 dotenv.config();
 
@@ -113,6 +114,38 @@ app.use('/api', evaluateRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/portfolio', portfolioRoutes);
+
+const ensurePortfolioSchema = async () => {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS portfolios (
+            portfolio_id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL UNIQUE,
+            bio TEXT,
+            skills TEXT,
+            profile_image VARCHAR(255),
+            resume VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS portfolio_projects (
+            project_id INT PRIMARY KEY AUTO_INCREMENT,
+            portfolio_id INT NOT NULL,
+            title VARCHAR(150) NOT NULL,
+            description TEXT NOT NULL,
+            image VARCHAR(255),
+            github_url VARCHAR(255),
+            live_demo_url VARCHAR(255),
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id) ON DELETE CASCADE
+        )
+    `);
+};
 
 // Socket.io Real-time Chat Logic
 io.on('connection', (socket) => {
@@ -194,6 +227,15 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+const startServer = async () => {
+    await ensurePortfolioSchema();
+
+    server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+};
+
+startServer().catch((error) => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
 });

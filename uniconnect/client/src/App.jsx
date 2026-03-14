@@ -14,6 +14,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import SearchPage from './pages/SearchPage';
 import ChatInterface from './pages/ChatInterface';
+import PublicPortfolio from './pages/PublicPortfolio';
 
 const PrivateRoute = ({ children, roleRequired }) => {
   const { user, loading } = useContext(AuthContext);
@@ -36,11 +37,13 @@ function App() {
 
   const isPublicAuthRoute = ['/login', '/register', '/forgot-password'].includes(location.pathname)
     || location.pathname.startsWith('/reset-password/');
+  const isPublicPortfolioRoute = location.pathname.startsWith('/portfolio/');
+  const isEdgeToEdgeRoute = isPublicAuthRoute || isPublicPortfolioRoute;
 
   return (
-    <div className={`min-h-screen flex flex-col w-full ${isPublicAuthRoute ? 'bg-transparent' : 'bg-slate-50'}`}>
-      {user && <Navbar />}
-      <main className={isPublicAuthRoute ? 'flex-grow w-full' : 'flex-grow w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'}>
+    <div className={`min-h-screen flex flex-col w-full ${isEdgeToEdgeRoute ? 'bg-transparent' : 'bg-slate-50'}`}>
+      {user && !isPublicPortfolioRoute && <Navbar />}
+      <main className={isEdgeToEdgeRoute ? 'flex-grow w-full' : 'flex-grow w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'}>
         <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
@@ -76,6 +79,8 @@ function App() {
               <Profile />
             </PrivateRoute>
           } />
+
+          <Route path="/portfolio/:username" element={<PublicPortfolio />} />
 
           <Route path="/resources" element={
             <PrivateRoute>

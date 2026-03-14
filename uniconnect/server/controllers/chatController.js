@@ -292,6 +292,8 @@ export const getUserChats = async (req, res, next) => {
                  ELSE m.sender_id
                END as id,
                u.username as name,
+               sp.department,
+               sp.profile_pic,
                'direct' as type
             FROM messages m
             JOIN users u ON u.user_id = (
@@ -300,6 +302,7 @@ export const getUserChats = async (req, res, next) => {
                  ELSE m.sender_id
                END
             )
+            LEFT JOIN student_profile sp ON sp.user_id = u.user_id
             WHERE (m.sender_id = ? OR m.receiver_id = ?) AND m.group_id IS NULL
         `, [currentUserId, currentUserId, currentUserId, currentUserId]);
 

@@ -40,7 +40,8 @@ export const aiService = {
     generateQuestions: (domain, difficulty, count, format) => api.post('/ai/questions', { domain, difficulty, count, format }),
     generateResources: (topic) => api.post('/ai/resources', { topic }),
     chatbotReply: (message, history = []) => api.post('/ai/chatbot', { message, history }),
-    generateDbMcq: (questionId) => api.post('/ai/db-mcq', { question_id: questionId })
+    generateDbMcq: (questionId) => api.post('/ai/db-mcq', { question_id: questionId }),
+    generateCareerCoach: (payload, options = {}) => api.post('/ai/career-coach', payload, options),
 };
 
 export default api;

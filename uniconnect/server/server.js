@@ -68,19 +68,23 @@ const corsOptions = {
 
 const io = new Server(server, {
     cors: {
-        origin: (origin, callback) => {
-            if (isAllowedOrigin(origin)) {
-                return callback(null, true);
-            }
-            return callback(new Error('Not allowed by Socket.IO CORS'));
-        },
+        origin: '*',
         methods: ['GET', 'POST']
     }
 });
 
 // Middleware
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+    return next();
+});
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
+app.options('*', cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

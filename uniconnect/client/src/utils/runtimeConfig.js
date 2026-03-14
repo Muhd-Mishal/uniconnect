@@ -18,14 +18,19 @@ const configuredApiUrl = trimTrailingSlash(import.meta.env.VITE_API_URL || '');
 const configuredApiOrigin = trimTrailingSlash(import.meta.env.VITE_API_ORIGIN || '');
 const configuredSocketUrl = trimTrailingSlash(import.meta.env.VITE_SOCKET_URL || '');
 
+const isVercelHost = hostname.endsWith('.vercel.app');
+const shouldUseSameOriginApi = isBrowser && !isLocalHost && !isViteDevHost && isVercelHost;
+
 const resolvedApiOrigin =
     configuredApiOrigin ||
     (configuredApiUrl ? stripApiSuffix(configuredApiUrl) : fallbackApiOrigin);
 
-export const API_ORIGIN = resolvedApiOrigin;
+export const API_ORIGIN = shouldUseSameOriginApi ? origin : resolvedApiOrigin;
 
-export const API_BASE_URL = configuredApiUrl
-    ? `${stripApiSuffix(configuredApiUrl)}/api`
-    : `${resolvedApiOrigin}/api`;
+export const API_BASE_URL = shouldUseSameOriginApi
+    ? '/api'
+    : configuredApiUrl
+        ? `${stripApiSuffix(configuredApiUrl)}/api`
+        : `${resolvedApiOrigin}/api`;
 
 export const SOCKET_URL = configuredSocketUrl || resolvedApiOrigin;

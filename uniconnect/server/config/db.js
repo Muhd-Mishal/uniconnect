@@ -31,4 +31,32 @@ const pool = mysql.createPool({
     keepAliveInitialDelay: 0
 });
 
+const RETRYABLE_DB_ERROR_CODES = new Set([
+    'ECONNRESET',
+    'PROTOCOL_CONNECTION_LOST',
+    'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR',
+    'ETIMEDOUT',
+    'EPIPE',
+]);
+
+const withReconnectRetry = (methodName) => {
+    const original = pool[methodName].bind(pool);
+
+    return async (...args) => {
+        try {
+            return await original(...args);
+        } catch (error) {
+            if (!RETRYABLE_DB_ERROR_CODES.has(error?.code)) {
+                throw error;
+            }
+
+            console.warn(`Retrying MySQL ${methodName} after connection error:`, error.code);
+            return original(...args);
+        }
+    };
+};
+
+pool.execute = withReconnectRetry('execute');
+pool.query = withReconnectRetry('query');
+
 export default pool;

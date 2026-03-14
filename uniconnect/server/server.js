@@ -21,6 +21,7 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const parseBoolean = (value) => ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase());
 const configuredOrigins = [
     process.env.CLIENT_ORIGIN,
     process.env.FRONTEND_URL,
@@ -33,12 +34,16 @@ const allowedOrigins = (configuredOrigins === '*' ? '' : configuredOrigins)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+const allowAllOrigins = process.env.ALLOW_ALL_ORIGINS
+    ? parseBoolean(process.env.ALLOW_ALL_ORIGINS)
+    : true;
 
 const wildcardToRegex = (pattern) => new RegExp(`^${pattern
     .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
     .replace(/\*/g, '.*')}$`);
 
 const isAllowedOrigin = (origin) => {
+    if (allowAllOrigins) return true;
     if (!origin) return true;
     if (allowedOrigins.length === 0) return true;
     return allowedOrigins.some((allowedOrigin) => {

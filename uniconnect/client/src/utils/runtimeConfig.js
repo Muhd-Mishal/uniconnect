@@ -19,7 +19,8 @@ const configuredApiOrigin = trimTrailingSlash(import.meta.env.VITE_API_ORIGIN ||
 const configuredSocketUrl = trimTrailingSlash(import.meta.env.VITE_SOCKET_URL || '');
 
 const isVercelHost = hostname.endsWith('.vercel.app');
-const shouldUseSameOriginApi = isBrowser && !isLocalHost && !isViteDevHost && isVercelHost;
+const hasExplicitApiConfig = Boolean(configuredApiUrl || configuredApiOrigin);
+const shouldUseSameOriginApi = isBrowser && !hasExplicitApiConfig && !isLocalHost && !isViteDevHost && isVercelHost;
 
 const resolvedApiOrigin =
     configuredApiOrigin ||
